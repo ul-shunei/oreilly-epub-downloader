@@ -34,7 +34,12 @@ oreilly-dl "https://learning.oreilly.com/library/view/ai-engineering/97810981662
 
 # Custom output path
 oreilly-dl 9781098166298 -c cookies.json -o "My Book.epub"
+
+# As a folder of HTML pages instead of an EPUB
+oreilly-dl 9781098166298 -c cookies.json -f html
 ```
+
+With `-f html`, the book is saved to `./downloads/<title>/` (or the folder given with `-o`) as one HTML page per chapter, plus `index.html` (table of contents), `style/main.css`, the cover and `images/`. Open `index.html` in a browser. Each page has Previous / Contents / Next links, and cross-references between chapters point at the local files.
 
 Example output:
 

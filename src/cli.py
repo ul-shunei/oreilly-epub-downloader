@@ -10,6 +10,7 @@ from rich.console import Console
 from .client import OreillyClient
 from .cookie_auth import load_cookies
 from .epub import create_epub
+from .html_export import create_html
 
 console = Console()
 
@@ -51,10 +52,19 @@ def sanitize_filename(name: str) -> str:
     "-o",
     "--output",
     type=click.Path(path_type=Path),
-    help="Output path (defaults to ./downloads/<title>.epub)",
+    help="Output path (defaults to ./downloads/<title>.epub, or ./downloads/<title>/ for html)",
 )
-def main(book: str, cookies: Path, output: Path | None) -> None:
-    """Download O'Reilly books as EPUB.
+@click.option(
+    "-f",
+    "--format",
+    "output_format",
+    type=click.Choice(["epub", "html"]),
+    default="epub",
+    show_default=True,
+    help="Output format: a single EPUB file, or a folder of HTML pages",
+)
+def main(book: str, cookies: Path, output: Path | None, output_format: str) -> None:
+    """Download O'Reilly books as EPUB or HTML.
 
     BOOK can be a book ID or full O'Reilly URL.
 
@@ -62,6 +72,7 @@ def main(book: str, cookies: Path, output: Path | None) -> None:
     Examples:
         oreilly-dl 9781098166298 -c cookies.json
         oreilly-dl "https://learning.oreilly.com/library/view/book/9781098166298/" -c cookies.json
+        oreilly-dl 9781098166298 -c cookies.json -f html
     """
     book_id = extract_book_id(book)
     console.print(f"[bold]Downloading book:[/] {book_id}")
@@ -72,15 +83,20 @@ def main(book: str, cookies: Path, output: Path | None) -> None:
         with OreillyClient(session) as client:
             book_data = client.get_book(book_id)
 
-        if output:
-            output_path = output if output.suffix == ".epub" else output.with_suffix(".epub")
-        else:
-            downloads = Path("downloads")
-            downloads.mkdir(exist_ok=True)
-            safe_title = sanitize_filename(book_data.metadata.title)
-            output_path = downloads / f"{safe_title}.epub"
+        safe_title = sanitize_filename(book_data.metadata.title)
 
-        create_epub(book_data, output_path)
+        if output_format == "html":
+            output_path = output or Path("downloads") / safe_title
+            create_html(book_data, output_path)
+        else:
+            if output:
+                output_path = output if output.suffix == ".epub" else output.with_suffix(".epub")
+            else:
+                downloads = Path("downloads")
+                downloads.mkdir(exist_ok=True)
+                output_path = downloads / f"{safe_title}.epub"
+            create_epub(book_data, output_path)
+
         console.print(f"\n[bold green]Done:[/] {output_path}")
 
     except KeyboardInterrupt:
