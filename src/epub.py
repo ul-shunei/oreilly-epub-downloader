@@ -119,10 +119,7 @@ def create_epub(book: Book, output_path: Path) -> Path:
 
 def _create_chapter(chapter: Chapter, css_item: epub.EpubItem) -> epub.EpubHtml:
     """Create an EPUB chapter from chapter content."""
-    # Generate a safe filename
-    safe_title = re.sub(r"[^\w\s-]", "", chapter.title)
-    safe_title = re.sub(r"\s+", "_", safe_title)[:50]
-    filename = f"ch{chapter.order:03d}_{safe_title}.xhtml"
+    filename = f"{_chapter_basename(chapter)}.xhtml"
 
     # Extract just the body content, stripping outer tags
     body_content = _extract_body_content(chapter.html_content)
@@ -139,6 +136,13 @@ def _create_chapter(chapter: Chapter, css_item: epub.EpubItem) -> epub.EpubHtml:
     epub_chapter.add_item(css_item)
 
     return epub_chapter
+
+
+def _chapter_basename(chapter: Chapter) -> str:
+    """Generate a safe filename (without extension) for a chapter."""
+    safe_title = re.sub(r"[^\w\s-]", "", chapter.title)
+    safe_title = re.sub(r"\s+", "_", safe_title)[:50]
+    return f"ch{chapter.order:03d}_{safe_title}"
 
 
 def _extract_body_content(html: str) -> str:
